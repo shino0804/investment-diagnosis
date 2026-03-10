@@ -1,0 +1,440 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, ArrowRight, RotateCcw, HeartHandshake, Shield, Rocket, Crown } from "lucide-react";
+
+const results = {
+  squirrel: {
+    id: "squirrel",
+    slug: "kotsukotsu-risu",
+    icon: Shield,
+    title: "コツコツリス",
+    subtitle: "堅実積立タイプ",
+    catchcopy: "急がない。でも、確実に育てる。その姿勢が、いちばん強い。",
+    accent: "from-emerald-400 via-teal-400 to-cyan-400",
+    bg: "from-emerald-50 via-white to-cyan-50",
+    description:
+      "慎重さと継続力が武器。派手さよりも再現性を重視し、長い時間を味方につけて成果を積み上げるタイプ。安心感があるので、周囲からも信頼されやすい。",
+    strengths: ["継続力が高い", "リスク管理が上手い", "感情でブレにくい"],
+    romantic: "恋愛では、急接近より“じわじわ信頼を積む”スタイル。軽さより誠実さが刺さる。",
+    portfolio: [
+      "現金（生活防衛費） 50万円",
+      "eMAXIS Slim 全世界株式 80万円",
+      "金・ゴールドETF 10万円",
+      "高配当の日本個別株 10万円",
+    ],
+  },
+  koala: {
+    id: "koala",
+    slug: "suyasuya-koala",
+    icon: HeartHandshake,
+    title: "スヤスヤコアラ",
+    subtitle: "安心バランサータイプ",
+    catchcopy: "攻めも守りも偏らない。本物の“安定感”を持つ人。",
+    accent: "from-sky-400 via-indigo-400 to-violet-400",
+    bg: "from-sky-50 via-white to-violet-50",
+    description:
+      "冷静さとバランス感覚が優秀。極端な選択を避け、複数の選択肢を持ちながら堅く前進するタイプ。全体最適を見られるのが強み。",
+    strengths: ["分散思考が得意", "精神的に安定", "大崩れしにくい"],
+    romantic: "恋愛では、相手に安心感を与えられるタイプ。刺激一辺倒ではなく“居心地の良さ”で勝つ。",
+    portfolio: [
+      "現金 50万円",
+      "全世界株式 60万円",
+      "日本個別株 20万円",
+      "金ETF 8万円 / J-REIT 10万円 / 外為OP 2万円",
+    ],
+  },
+  rabbit: {
+    id: "rabbit",
+    slug: "nobinobi-usagi",
+    icon: Rocket,
+    title: "ノビノビウサギ",
+    subtitle: "成長チャレンジャータイプ",
+    catchcopy: "少し背伸びした選択が、人生を別次元へ連れていく。",
+    accent: "from-pink-400 via-rose-400 to-orange-400",
+    bg: "from-rose-50 via-white to-orange-50",
+    description:
+      "未来志向で、可能性に賭けることができるタイプ。守り一辺倒では終わらず、伸びしろのあるテーマに乗る胆力がある。",
+    strengths: ["成長テーマを掴む", "行動に伸びがある", "変化を前向きに扱える"],
+    romantic: "恋愛では、相手を新しい世界に連れ出せるタイプ。ワクワク感を作れるのが強み。",
+    portfolio: [
+      "現金 50万円",
+      "S&P500 35万円",
+      "日本個別株 25万円 / 米国個別株 15万円",
+      "Bitcoin 10万円 / 金ETF 5万円 / 外為OP・FX 10万円",
+    ],
+  },
+  tiger: {
+    id: "tiger",
+    slug: "tryger",
+    icon: Crown,
+    title: "トライガー",
+    subtitle: "アクティブ挑戦タイプ",
+    catchcopy: "攻撃力は最大。でも崩れない。それが本物のアクティブ。",
+    accent: "from-amber-400 via-fuchsia-400 to-purple-500",
+    bg: "from-amber-50 via-white to-fuchsia-50",
+    description:
+      "瞬発力と決断力が高く、ここだと思ったら踏み込めるタイプ。大胆だが、ただの博打ではなく“勝ち筋のある攻め”を選べる。",
+    strengths: ["決断が速い", "テーマ投資に強い", "リターンを取りにいける"],
+    romantic: "恋愛では、主導権を握って空気を動かせるタイプ。停滞を嫌い、展開を作るのが上手い。",
+    portfolio: [
+      "現金 50万円",
+      "S&P500 15万円 / 日本個別株 35万円",
+      "米国成長株 15万円 / Bitcoin 15万円",
+      "金ETF 5万円 / 外為OP・FX 20万円",
+    ],
+  },
+};
+
+const questions = [
+  {
+    id: 1,
+    text: "大きなチャンスが来た時、あなたの初動は？",
+    options: [
+      { text: "まず情報を集めて、失敗しにくい形に整える", scores: { squirrel: 3, koala: 2 } },
+      { text: "全体のバランスを見て、無理のない範囲で動く", scores: { koala: 3, squirrel: 1 } },
+      { text: "成長性があるなら、少し背伸びしてでも乗る", scores: { rabbit: 3, tiger: 1 } },
+      { text: "いけると判断したら、一気に踏み込む", scores: { tiger: 3, rabbit: 1 } },
+    ],
+  },
+  {
+    id: 2,
+    text: "周囲から褒められやすいあなたの強みは？",
+    options: [
+      { text: "堅実でブレないところ", scores: { squirrel: 3 } },
+      { text: "安心感と気配りのうまさ", scores: { koala: 3 } },
+      { text: "新しい挑戦に前向きなところ", scores: { rabbit: 3 } },
+      { text: "決断力と引っ張る力", scores: { tiger: 3 } },
+    ],
+  },
+  {
+    id: 3,
+    text: "理想の人生設計に近いのは？",
+    options: [
+      { text: "確実に資産や実績を積み上げていく", scores: { squirrel: 3, koala: 1 } },
+      { text: "安定と自由のバランスを両立したい", scores: { koala: 3, squirrel: 1 } },
+      { text: "成長し続けて、選択肢を増やしたい", scores: { rabbit: 3 } },
+      { text: "大きく勝って、景色を変えたい", scores: { tiger: 3, rabbit: 1 } },
+    ],
+  },
+  {
+    id: 4,
+    text: "恋愛で自然と出やすいスタンスは？",
+    options: [
+      { text: "誠実に向き合い、信頼を少しずつ作る", scores: { squirrel: 3 } },
+      { text: "相手に安心してもらえる関係を目指す", scores: { koala: 3 } },
+      { text: "一緒に新しい体験を増やしていきたい", scores: { rabbit: 3 } },
+      { text: "自分から空気を動かして主導したい", scores: { tiger: 3 } },
+    ],
+  },
+  {
+    id: 5,
+    text: "ピンチの時に頼るものは？",
+    options: [
+      { text: "準備してきた蓄えとルール", scores: { squirrel: 3 } },
+      { text: "複数の選択肢を残しておくこと", scores: { koala: 3 } },
+      { text: "状況に応じて伸びる方へ切り替える柔軟さ", scores: { rabbit: 3 } },
+      { text: "勝負どころで決め切る胆力", scores: { tiger: 3 } },
+    ],
+  },
+  {
+    id: 6,
+    text: "最後に一番しっくり来る言葉は？",
+    options: [
+      { text: "継続は強い", scores: { squirrel: 3 } },
+      { text: "安定は才能", scores: { koala: 3 } },
+      { text: "成長は正義", scores: { rabbit: 3 } },
+      { text: "挑戦で景色は変わる", scores: { tiger: 3 } },
+    ],
+  },
+];
+
+function getTopResult(scoreMap) {
+  const entries = Object.entries(scoreMap).sort((a, b) => b[1] - a[1]);
+  return entries[0]?.[0] || "koala";
+}
+
+function useHashRoute() {
+  const getHash = () => window.location.hash.replace(/^#/, "") || "/";
+  const [route, setRoute] = useState(getHash());
+
+  useEffect(() => {
+    const onHashChange = () => setRoute(getHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const navigate = (next) => {
+    window.location.hash = next;
+  };
+
+  return { route, navigate };
+}
+
+function AppShell({ children }) {
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.9),_rgba(240,244,255,0.9),_rgba(255,245,250,0.95))] text-slate-900">
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.35)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.35)_1px,transparent_1px)] bg-[size:32px_32px] opacity-40 pointer-events-none" />
+      <div className="relative mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-10">{children}</div>
+    </div>
+  );
+}
+
+function GlassCard({ children, className = "" }) {
+  return (
+    <div className={`backdrop-blur-xl bg-white/70 border border-white/70 shadow-[0_20px_80px_rgba(31,41,55,0.12)] rounded-3xl ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function Hero({ navigate }) {
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-stretch">
+      <GlassCard className="p-8 md:p-12 overflow-hidden relative">
+        <div className="absolute -top-14 -right-14 h-48 w-48 rounded-full bg-gradient-to-br from-pink-300/35 to-violet-400/30 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-gradient-to-br from-cyan-300/25 to-emerald-300/25 blur-3xl" />
+        <Badge className="mb-5 rounded-full px-4 py-1.5 text-sm bg-slate-900 hover:bg-slate-900 text-white">
+          <Sparkles className="h-4 w-4 mr-2" />
+          Stylish Diagnosis Experience
+        </Badge>
+        <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.05]">
+          MBTIっぽく、
+          <br />
+          <span className="bg-gradient-to-r from-fuchsia-500 via-violet-500 to-cyan-500 bg-clip-text text-transparent">
+            結果ページまで飛ぶ
+          </span>
+          <br />
+          診断サイト。
+        </h1>
+        <p className="mt-6 text-base md:text-lg text-slate-600 max-w-2xl leading-8">
+          ラブタイプ診断や性格診断サイトの空気感をそのまま再現。質問に答えると、診断結果ごとの専用ページへ遷移。
+          見た目も中身も“ちゃんと映える”設計です。
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button
+            size="lg"
+            className="rounded-2xl px-6 py-6 text-base shadow-lg"
+            onClick={() => navigate("/quiz")}
+          >
+            診断をはじめる
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-2xl px-6 py-6 text-base bg-white/70"
+            onClick={() => navigate("/result/suyasuya-koala")}
+          >
+            サンプル結果を見る
+          </Button>
+        </div>
+      </GlassCard>
+
+      <div className="grid gap-4">
+        {Object.values(results).map((r) => {
+          const Icon = r.icon;
+          return (
+            <motion.div key={r.id} whileHover={{ y: -4 }} transition={{ duration: 0.18 }}>
+              <GlassCard className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${r.accent} text-white flex items-center justify-center shadow-lg`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-lg">{r.title}</div>
+                    <div className="text-sm text-slate-500">{r.subtitle}</div>
+                    <p className="mt-2 text-sm text-slate-600 leading-6">{r.catchcopy}</p>
+                  </div>
+                </div>
+              </GlassCard>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function QuizPage({ navigate }) {
+  const initialScores = { squirrel: 0, koala: 0, rabbit: 0, tiger: 0 };
+  const [step, setStep] = useState(0);
+  const [scores, setScores] = useState(initialScores);
+
+  const current = questions[step];
+  const progress = Math.round((step / questions.length) * 100);
+
+  const handleSelect = (option) => {
+    const nextScores = { ...scores };
+    Object.entries(option.scores).forEach(([k, v]) => {
+      nextScores[k] += v;
+    });
+    setScores(nextScores);
+
+    if (step + 1 < questions.length) {
+      setStep(step + 1);
+    } else {
+      const winner = getTopResult(nextScores);
+      navigate(`/result/${results[winner].slug}`);
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <GlassCard className="p-6 md:p-8">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="text-sm text-slate-500">Question {step + 1} / {questions.length}</div>
+            <h2 className="text-2xl md:text-3xl font-black mt-1">あなたのタイプを診断中</h2>
+          </div>
+          <Button variant="ghost" className="rounded-2xl" onClick={() => navigate("/")}>トップへ戻る</Button>
+        </div>
+        <Progress value={progress} className="h-3 rounded-full mb-8" />
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current.id}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -18 }}
+            transition={{ duration: 0.24 }}
+          >
+            <h3 className="text-xl md:text-2xl font-bold leading-9 mb-6">{current.text}</h3>
+            <div className="grid gap-3">
+              {current.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelect(option)}
+                  className="text-left rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm transition hover:border-violet-300 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-base md:text-lg font-medium text-slate-800">{option.text}</span>
+                    <ArrowRight className="h-4 w-4 text-slate-400" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </GlassCard>
+    </div>
+  );
+}
+
+function ResultPage({ slug, navigate }) {
+  const result = useMemo(
+    () => Object.values(results).find((r) => r.slug === slug) || results.koala,
+    [slug]
+  );
+  const Icon = result.icon;
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <div className={`rounded-[2rem] p-[1px] bg-gradient-to-br ${result.accent} shadow-[0_25px_80px_rgba(99,102,241,0.18)]`}>
+        <div className={`rounded-[2rem] bg-gradient-to-br ${result.bg} p-6 md:p-10`}>
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-4 md:gap-5">
+              <div className={`h-16 w-16 md:h-20 md:w-20 rounded-[1.5rem] bg-gradient-to-br ${result.accent} text-white flex items-center justify-center shadow-xl`}>
+                <Icon className="h-8 w-8 md:h-10 md:w-10" />
+              </div>
+              <div>
+                <Badge className="rounded-full px-4 py-1.5 bg-white text-slate-700 border border-slate-200">
+                  Diagnosis Result
+                </Badge>
+                <h1 className="mt-3 text-3xl md:text-5xl font-black tracking-tight">{result.title}</h1>
+                <p className="mt-2 text-base md:text-lg text-slate-500">{result.subtitle}</p>
+                <p className="mt-4 text-lg md:text-xl font-semibold text-slate-800 leading-8">{result.catchcopy}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button className="rounded-2xl" onClick={() => navigate("/quiz")}>もう一度診断する</Button>
+              <Button variant="outline" className="rounded-2xl bg-white/70" onClick={() => navigate("/")}>トップへ</Button>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_0.95fr]">
+            <Card className="rounded-3xl border-white/80 bg-white/80 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl">タイプ解説</CardTitle>
+                <CardDescription>診断らしさを出すための、しっかり読ませる結果ページ</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-slate-700 leading-8">{result.description}</p>
+                <div>
+                  <div className="font-semibold mb-3">このタイプの強み</div>
+                  <div className="flex flex-wrap gap-2">
+                    {result.strengths.map((item) => (
+                      <Badge key={item} variant="secondary" className="rounded-full px-3 py-1.5 text-sm">{item}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-slate-900 text-white p-5">
+                  <div className="text-sm uppercase tracking-[0.18em] text-white/60 mb-2">Love Type Note</div>
+                  <p className="leading-8 text-white/90">{result.romantic}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-3xl border-white/80 bg-white/80 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl">おすすめ配分イメージ</CardTitle>
+                <CardDescription>PDFのタイプ設計を結果ページに馴染むよう再構成</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {result.portfolio.map((item, idx) => (
+                    <div key={idx} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-700">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {Object.values(results).map((r) => {
+              const RIcon = r.icon;
+              return (
+                <button
+                  key={r.id}
+                  onClick={() => navigate(`/result/${r.slug}`)}
+                  className="text-left rounded-3xl border border-white/80 bg-white/70 p-5 shadow-md transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`h-11 w-11 rounded-2xl bg-gradient-to-br ${r.accent} text-white flex items-center justify-center`}>
+                      <RIcon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="font-bold">{r.title}</div>
+                      <div className="text-sm text-slate-500">{r.subtitle}</div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoveMbtiDiagnosisSite() {
+  const { route, navigate } = useHashRoute();
+
+  let page = null;
+  if (route === "/quiz") {
+    page = <QuizPage navigate={navigate} />;
+  } else if (route.startsWith("/result/")) {
+    const slug = route.replace("/result/", "");
+    page = <ResultPage slug={slug} navigate={navigate} />;
+  } else {
+    page = <Hero navigate={navigate} />;
+  }
+
+  return <AppShell>{page}</AppShell>;
+}
